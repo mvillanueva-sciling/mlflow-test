@@ -1,0 +1,49 @@
+name: mlflow-examples-sklearn
+
+python_env: python_env.yaml
+
+#docker_env:
+  #image:  mlflow-train-sklearn-wine
+
+entry_points:
+  main:
+    parameters:
+      data-path: {type: string, default: https://raw.githubusercontent.com/mlflow/mlflow/master/examples/sklearn_elasticnet_wine/wine-quality.csv }
+      model-name: {type: string, default: None }
+      model-version-stage: {type: string, default: None }
+      archive-existing-versions: {type: boolean, default: False }
+      save-signature: {type: boolean, default: False }
+      log-as-onnx: {type: boolean, default: False}
+      max-depth: {type: int, default: 10}
+      max-leaf-nodes: {type: int, default: 32}
+      run-origin: {type: string, default: "default" }
+      output-path: {type: string, default: None }
+    command: "python -um wine_quality.train
+                --data-path {data-path}
+                --model-name {model-name}
+                --model-version-stage {model-version-stage}
+                --archive-existing-versions {archive-existing-versions}
+                --log-as-onnx {log-as-onnx}
+                --max-depth {max-depth}
+                --max-leaf-nodes {max-leaf-nodes}
+                --run-origin {run-origin}
+                --output-path {output-path}
+                "
+  autolog:
+    parameters:
+      data-path: {type: string, default: https://raw.githubusercontent.com/mlflow/mlflow/master/examples/sklearn_elasticnet_wine/wine-quality.csv }
+      max-depth: int
+      max-leaf-nodes: {type: int, default: 32}
+    command: "python -um wine_quality.autolog_train
+                --data-path {data-path}
+                --max-depth {max-depth}
+                --max-leaf-nodes {max-leaf-nodes}"
+  predict:
+    parameters:
+      model-uri: string
+      flavor: string
+      data-path: {type: string, default: https://raw.githubusercontent.com/mlflow/mlflow/master/examples/sklearn_elasticnet_wine/wine-quality.csv }
+    command: "python -um wine_quality.predict 
+                --model-uri {model-uri} 
+                --flavor {flavor} 
+                --data-path {data-path}"

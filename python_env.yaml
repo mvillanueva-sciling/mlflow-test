@@ -1,0 +1,11 @@
+python: "3.8"
+dependencies:
+  - pip:
+    - mlflow>=1.30
+    - scikit-learn
+    - matplotlib
+    - onnx==1.13.0
+    - onnxruntime==1.13.1
+    - onnxmltools==1.11.1
+    - pyspark==3.3.1
+    - shortuuid
