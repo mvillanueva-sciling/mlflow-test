@@ -1,2 +1,4 @@
 mlruns/
 venv/
+__pycache__
+plots/
