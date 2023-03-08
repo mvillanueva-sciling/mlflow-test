@@ -137,9 +137,7 @@ class SvmClassifier(Trainer):
     @train_wrapper
     def train(self,
               registered_model_name: Optional[str],
-              plot_file: Optional[str],
-              max_depth: Optional[Union[int, None]] = None,
-              max_leaf_nodes: Optional[Union[int, None]] = 32):
+              plot_file: Optional[str]):
         """
         Train a model and log in mlflow
         """

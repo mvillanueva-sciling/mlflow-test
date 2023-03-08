@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(experiment_name: Optional[str],
-         data_path: Optional[str],
+         train_path: Optional[str],
          model_name: Optional[str],
          registered_model_name: Optional[str],
          registered_model_version_stage: Optional[str],
@@ -24,7 +24,7 @@ def main(experiment_name: Optional[str],
         logger.debug("  %s: %s", k, v)
     
     dt_trainer = SvmClassifier(experiment_name=experiment_name,
-                                   data_path=data_path,
+                                   train_path=train_path,
                                    save_signature=save_signature,
                                    registered_model_version_stage=registered_model_version_stage,  # noqa
                                    output_path=output_path)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     args = build_parser().parse_args()
 
     main(experiment_name=args.experiment_name,
-         data_path=args.data_path,
+         train_path=args.train_path,
          model_name=args.model_name,
          registered_model_name=args.registered_model_name,
          registered_model_version_stage=args.registered_model_version_stage,
