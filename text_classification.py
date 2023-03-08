@@ -54,7 +54,7 @@ def build_parser() -> ArgumentParser:
     """
     parser = ArgumentParser()
     parser.add_argument("--experiment_name", dest="experiment_name", help="experiment_name", default="sklearn", required=False) # noqa
-    parser.add_argument("--train_path", dest="data_path", help="data_path", default="movie_reviews/txt_sentoken", required=False) # noqa
+    parser.add_argument("--train_path", dest="train_path", help="train_path", default="data/corpus.csv", required=False) # noqa
     parser.add_argument("--registered_model_version_stage", dest="registered_model_version_stage", help="registered_model_version_stage", default="None", required=False) # noqa
     parser.add_argument("--save_signature", dest="save_signature", help="save_signature", type=bool, default=False, required=False) # noqa
     parser.add_argument("--output_path", dest="output_path", help="output_path", default=None, required=False) # noqa

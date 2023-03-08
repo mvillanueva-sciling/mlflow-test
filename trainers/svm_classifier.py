@@ -16,6 +16,7 @@ from nltk.corpus import wordnet as wn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import model_selection, naive_bayes, svm
 import sklearn.metrics as metrics
+from common.trainer import *
 
 
 from hpsklearn import HyperoptEstimator, svc
@@ -59,8 +60,8 @@ class SvmClassifier(Trainer):
         """
         Load data and split it into training and testing sets
         """
-        corpus = self.preprocess_data(self.corpus_path)
-        X_train, X_test, y_train, y_test = model_selection.train_test_split(Corpus['text_final'],Corpus['label'],test_size=0.3)
+        corpus = self.preprocess_data(self.train_path)
+        X_train, X_test, y_train, y_test = model_selection.train_test_split(corpus['text_final'],corpus['label'],test_size=0.3)
 
         logger.debug(f">> X_test.type: {type(X_test)}")
         logger.debug(f">> X_test.dtypes: {X_test.dtypes}")
@@ -110,7 +111,7 @@ class SvmClassifier(Trainer):
         Test_Y = Encoder.fit_transform(Test_Y)
 
         # Create artifacts path if it doesn't exist
-        artifacts_path = os.path.join('.', 'artifacts', type(self)).__name__)
+        artifacts_path = os.path.join('.', 'artifacts', type(self).__name__)
         if not os.path.exists(artifacts_path):
             os.makedirs(artifacts_path)
         

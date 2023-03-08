@@ -127,7 +127,3 @@ class Trainer(ABC):
     @abstractmethod
     def train(self, *args, **kwargs) -> None:
         pass
-    
-    @abstractmethod
-    def log_artifacts(self, *args, **kwargs) -> None:
-        pass
