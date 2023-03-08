@@ -1,4 +1,6 @@
+setuptools
 mlflow
 pandas
 scikit-learn
-shortuuid
+hyperopt
+hpsklearn

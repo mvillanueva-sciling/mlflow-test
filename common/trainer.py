@@ -15,6 +15,15 @@ client = mlflow.client.MlflowClient()
 now = round(time.time())
 logger = logging.getLogger(__name__)
 
+def artifact_logger(func):
+    """
+    This wrapper functions is used to log all artifacts created for this class after training to MLflow.
+    """
+    def wrapper(self, *args, **kwargs):
+
+        func(self, *args, **kwargs)
+        mlflow.log_artifacts(os.path.join('.', 'artifacts', type(self).__name__))
+        return wrapper
 
 def train_wrapper(func):
     """
@@ -22,7 +31,7 @@ def train_wrapper(func):
     Define mlflow tags and metrics to track the training process.
     """
     def wrapper(self, *args, **kwargs):
-        # Defien a run name for this session
+        # Define a run name for this session
         run_name = f"{now} {mlflow.__version__}"
         
         with mlflow.start_run(run_name=run_name) as run: 
@@ -72,7 +81,7 @@ def train_wrapper(func):
         client.set_tag(run_id, "run.info._start_time", run.info.start_time)
         client.set_tag(run_id, "run.info._end_time", run.info.end_time)
         client.set_tag(run_id, "run.info.status", run.info.status)
-        
+
         return (experiment_id, run_id)
     
     return wrapper
@@ -117,4 +126,8 @@ class Trainer(ABC):
     
     @abstractmethod
     def train(self, *args, **kwargs) -> None:
+        pass
+    
+    @abstractmethod
+    def log_artifacts(self, *args, **kwargs) -> None:
         pass
