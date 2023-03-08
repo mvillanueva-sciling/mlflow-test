@@ -24,28 +24,11 @@ def main(experiment_name: Optional[str],
         logger.debug("  %s: %s", k, v)
     
     dt_trainer = SvmClassifier(experiment_name=experiment_name,
-                                   train_path=train_path,
-                                   save_signature=save_signature,
-                                   registered_model_version_stage=registered_model_version_stage,  # noqa
-                                   output_path=output_path)
+                               train_path=train_path,
+                               save_signature=save_signature,
+                               registered_model_version_stage=registered_model_version_stage,  # noqa
+                               output_path=output_path)
     
-    
-    dt_trainer.train(registered_model_name=registered_model_name,
-                  plot_file=plot_file_dt,
-                  max_depth=max_depth,
-                  max_leaf_nodes=max_leaf_nodes)
-    
-    en_trainer = ElasticNetTrainer(experiment_name=experiment_name,
-                                   data_path=data_path,
-                                   save_signature=save_signature,
-                                   registered_model_version_stage=registered_model_version_stage,  # noqa
-                                   output_path=output_path)
-    
-    
-    en_trainer.train(registered_model_name=registered_model_name,
-                     plot_file=plot_file_en,
-                     alpha=alpha,
-                     l1_ratio=l1_ratio)
 
 
 def build_parser() -> ArgumentParser:
