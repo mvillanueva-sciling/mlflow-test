@@ -2,6 +2,10 @@ setuptools
 mlflow
 pandas
 scikit-learn
-hyperopt
+hyperopt==0.2.5
 hpsklearn
 nltk
+transformers
+datasets
+evaluate
+torch

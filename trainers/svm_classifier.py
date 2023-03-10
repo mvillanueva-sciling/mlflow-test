@@ -16,7 +16,7 @@ from nltk.corpus import wordnet as wn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import model_selection, naive_bayes, svm
 import sklearn.metrics as metrics
-from common.trainer import *
+from common.trainer import Trainer, artifact_logger_factory, train_wrapper
 
 
 from hpsklearn import HyperoptEstimator, svc
@@ -32,9 +32,9 @@ from utils import plot_utils
 client = mlflow.client.MlflowClient()
 now = round(time.time())
 logger = logging.getLogger(__name__)
-np.random.seed(500)
 
-        
+np.random.RandomState(500)
+
 class SvmClassifier(Trainer):
     """
     Trainer class 
@@ -42,17 +42,18 @@ class SvmClassifier(Trainer):
 
     def __init__(self, experiment_name: Optional[str],
                  save_signature: Optional[bool],
-                 train_path: str,
+                 data_path: str,
                  registered_model_version_stage : Optional[str],
                  output_path: Optional[Union[str, None]],
                  **kwargs):
         
-        self.train_path = train_path
+        self.data_path = data_path
 
         super().__init__(experiment_name=experiment_name,
                          save_signature=save_signature,
                          registered_model_version_stage=registered_model_version_stage,
                          output_path=output_path,
+                         model_name_run= self.__class__.__name__,
                          **kwargs)
         
         
@@ -60,27 +61,28 @@ class SvmClassifier(Trainer):
         """
         Load data and split it into training and testing sets
         """
-        corpus = self.preprocess_data(self.train_path)
+        corpus = self.preprocess_data(self.data_path)
         X_train, X_test, y_train, y_test = model_selection.train_test_split(corpus['text_final'],corpus['label'],test_size=0.3)
+        self.X_train, self.X_test = self.encode_text(X_train, X_test)
+        self.y_train, self.y_test = self.encode_text(y_train, y_test)
 
-        logger.debug(f">> X_test.type: {type(X_test)}")
-        logger.debug(f">> X_test.dtypes: {X_test.dtypes}")
-
-        return X_train, X_test, y_train, y_test
-         
+    def infer_signature(self):
+        predictions = self.model.predict(self.X_test.reshape(-1, 1))
+        return infer_signature(self.X_train, predictions) if self.save_signature else None # noqa
+    
     def preprocess_data(self, corpus_path: str) -> pd.DataFrame:
         """
         Preprocess text
         """
         # Add the Data using pandas
-        corpus = pd.read_csv(corpus_path,encoding='latin-1')
+        corpus = pd.read_csv(corpus_path, encoding='latin-1')
         corpus['text'].dropna(inplace=True)
         corpus['text'] = [entry.lower() for entry in corpus['text']]
         # Step - 1c : Tokenization : In this each entry in the corpus will be broken into set of words
         corpus['text']= [word_tokenize(entry) for entry in corpus['text']]
         # Remove Stop words, Non-Numeric and perfom Word Stemming/Lemmenting.
         # WordNetLemmatizer requires Pos tags to understand if the word is noun or verb or adjective etc. By default it is set to Noun
-        tag_map = defaultdict(lambda : wn.NOUN)
+        tag_map = defaultdict(lambda: wn.NOUN)
         tag_map['J'] = wn.ADJ
         tag_map['V'] = wn.VERB
         tag_map['R'] = wn.ADV
@@ -134,7 +136,7 @@ class SvmClassifier(Trainer):
 
         return Train_X, Test_X
         
-    @artifact_logger
+    @artifact_logger_factory("SvmClassifier")
     @train_wrapper
     def train(self,
               registered_model_name: Optional[str],
@@ -142,33 +144,33 @@ class SvmClassifier(Trainer):
         """
         Train a model and log in mlflow
         """
-        classifiers = [naive_bayes.MultinomialNB(), svc("mySVC")]
-        for classifier in classifiers:
+        # naive_bayes.MultinomialNB(), 
+        classifiers = [svc("mySVC", max_iter=10, degree=3)]
+        names = ['SVC']
+        for classifier, name in zip(classifiers, names):
             # Find the best parameters
             model = HyperoptEstimator(classifier=classifier,
-                                    algo=tpe.suggest,
-                                    max_evals=20,
-                                    trial_timeout=300)
+                                      algo=tpe.suggest,
+                                      max_evals=20,
+                                      trial_timeout=300)
             # Create model
 
             # Fit and predict
-            model.fit(self.X_train, self.y_train)
-            predictions = model.predict(self.X_test)
+            model.fit(self.X_train.reshape(-1, 1), self.y_train.reshape(-1, 1))
+            predictions = model.predict(self.X_test.reshape(-1, 1))
 
             # MLflow params
             logger.debug("Parameters:")
             logger.debug(f"  best model: {model.best_model()}")
-            logger.debug(f"  model score: {model.score( self.X_test, self.y_test )}")
+            logger.debug(f"  model score: {model.score( self.X_test.reshape(-1, 1), self.y_test.reshape(-1, 1) )}")
 
-            mlflow.log_param("max_depth", max_depth)
-            mlflow.log_param("max_leaf_nodes", max_leaf_nodes)
 
             # MLflow metrics
-            prec = metrics.precision(self.y_test, predictions)
-            recall = metrics.recall(self.y_test, predictions)
+            prec = metrics.precision_score(self.y_test, predictions)
+            recall = metrics.recall_score(self.y_test, predictions)
             f1 = metrics.f1_score(self.y_test, predictions)
             roc_auc = metrics.roc_auc_score(self.y_test, predictions)
-            fpr, tpr, threshold = metrics.roc_curve(y_test,  y_pred_proba)
+            # fpr, tpr, threshold = metrics.roc_curve(y_test.reshape(-1, 1),  y_pred_proba)
 
             
             logger.debug("Metrics:")
@@ -183,9 +185,11 @@ class SvmClassifier(Trainer):
             mlflow.log_metric("roc_auc", roc_auc)
 
             if plot_file:
+                name = self.__class__.__name__
                 base_dir = os.path.dirname(plot_file)
-                plot_file_temp = os.path.join(os.path.join(base_dir, type(classifier).__name__), os.path.basename(plot_file))
-                plot_utils.create_plot_file(y_test_set=self.y_test, y_predicted=predictions, plot_file=plot_file_temp)
-                plot_utils.plot_roc_auc(y_test_set=self.y_test, y_predicted=predictions, fpr=fpr, tpr=tpr, threshold=threshold, roc_auc=roc_auc, plot_file=plot_file_temp)
+                plot_file_temp = os.path.join(os.path.join(base_dir, name), os.path.basename(plot_file))
+                plot_utils.create_plot_file(y_test_set=self.y_test, y_predicted=predictions, plot_file=plot_file_temp) # noqa
+                # plot_utils.plot_roc_auc(y_test_set=self.y_test, y_predicted=predictions, fpr=fpr, tpr=tpr, threshold=threshold, roc_auc=roc_auc, plot_file=plot_file_temp)
         
-        return model, predictions, registered_model_name
+        self.model = model 
+        return registered_model_name

@@ -35,6 +35,7 @@ def create_plot_file(y_test_set, y_predicted, plot_file):
     Create a Ground truth vs predicted plot
     """
     plot_file = plot_file.replace('.png', '_ground_truth.png')
+    dir_ceck(plot_file)
     fig, ax = plt.subplots()
     ax.scatter(y_test_set, y_predicted, edgecolors=(0, 0, 0))
     ax.plot([y_test_set.min(), y_test_set.max()], [y_test_set.min(), y_test_set.max()], 'k--', lw=4)

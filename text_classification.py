@@ -23,12 +23,14 @@ def main(experiment_name: Optional[str],
     for k, v in locals().items(): 
         logger.debug("  %s: %s", k, v)
     
-    dt_trainer = SvmClassifier(experiment_name=experiment_name,
-                               train_path=train_path,
+    svm_trainer = SvmClassifier(experiment_name=experiment_name,
+                               data_path=train_path,
                                save_signature=save_signature,
                                registered_model_version_stage=registered_model_version_stage,  # noqa
                                output_path=output_path)
     
+    svm_trainer.train(registered_model_name=registered_model_name,
+                      plot_file=plot_file)
 
 
 def build_parser() -> ArgumentParser:
@@ -41,9 +43,9 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--registered_model_version_stage", dest="registered_model_version_stage", help="registered_model_version_stage", default="None", required=False) # noqa
     parser.add_argument("--save_signature", dest="save_signature", help="save_signature", type=bool, default=False, required=False) # noqa
     parser.add_argument("--output_path", dest="output_path", help="output_path", default=None, required=False) # noqa
-    parser.add_argument("--plot_file", dest="plot_file", help="plot_file", default="plots/plot.png", required=False) # noqa
+    parser.add_argument("--plot_file", dest="plot_file", help="plot_file", default="artifacts/plots/plot.png", required=False) # noqa
     parser.add_argument("--model_name", dest="model_name", help="model_name", default="default_model_name", required=False) # noqa
-    parser.add_argument("--registered_model_name", dest="registered_model_name", help="registered_model_name", default="DecisionTree model", required=False) # noqa
+    parser.add_argument("--registered_model_name", dest="registered_model_name", help="registered_model_name", default="SVC model", required=False) # noqa
     return parser
 
 

@@ -10,26 +10,23 @@ import functools
 import numpy as np
 import mlflow
 import mlflow.sklearn
+from mlflow.models.signature import infer_signature
 
 # Common variables
 client = mlflow.client.MlflowClient()
 now = round(time.time())
 logger = logging.getLogger(__name__)
 
+def artifact_logger(log_func):
+    """
+    This wrapper functions is used to log all artifacts created for this class after training to MLflow.
+    """
+    @functools.wraps(log_func)
+    def wrapper(self, *args, **kwargs):
 
-def artifact_logger_factory(class_name):
-    def artifact_logger(log_func):
-        """
-        This wrapper functions is used to log all artifacts created for this class after training to MLflow.
-        """
-        @functools.wraps(log_func)
-        def wrapper(self, *args, **kwargs):
-
-            return log_func(self, *args, **kwargs)
-            mlflow.log_artifacts(os.path.join('.', 'artifacts', type(self).__name__))
-        return wrapper
-    return artifact_logger
-
+        return log_func(self, *args, **kwargs)
+        mlflow.log_artifacts(os.path.join('.', 'artifacts', type(self).__name__))
+    return wrapper
 
 def train_wrapper(func):
     """
@@ -60,16 +57,16 @@ def train_wrapper(func):
             mlflow.set_tag("timestamp", now)
             mlflow.set_tag("version.mlflow", mlflow.__version__)
 
-            registered_model_name = func(self, *args, **kwargs) # noqa
-            
+            model, predictions, registered_model_name = func(self, *args, **kwargs) # noqa
+
             # Create signature
-            signature = self.infer_signature()
+            signature = infer_signature(self.X_train, predictions) if self.save_signature else None # noqa
             logger.debug("Signature: %s", signature)
 
             # MLflow log model
-            mlflow.sklearn.log_model(self.model, "model", signature=signature)
+            mlflow.sklearn.log_model(model, "model", signature=signature)
             if registered_model_name:
-                model_uri = f"runs:/{run.info.run_id}/{self.model_name_run}-model"
+                model_uri = f"runs:/{run.info.run_id}/sklearn-model"
                 mv = mlflow.register_model(model_uri, registered_model_name)
                 logger.debug("Name: %s", mv.name)
                 logger.debug("Version: %s", mv.version)
@@ -102,7 +99,6 @@ class Trainer(ABC):
                  save_signature: Optional[bool],
                  registered_model_version_stage : Optional[str],  # noqa
                  output_path: Optional[str],
-                 model_name_run: Optional[str],
                  **kwargs):  # noqa
         """
         Constructor for the Trainer class
@@ -112,7 +108,7 @@ class Trainer(ABC):
         self.registered_model_version_stage = registered_model_version_stage
         self.output_path = output_path
 
-        self.load_data(**kwargs)  # noqa
+        self.X_train,self.X_test, self.y_train, self.y_test = self.load_data(**kwargs)  # noqa
 
         if self.experiment_name:
             mlflow.set_experiment(experiment_name)
@@ -125,14 +121,13 @@ class Trainer(ABC):
                                       now)
     
     @abstractmethod
-    def load_data(self, *args, **kwargs) -> Tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray]: # noqa
+    def load_data(*args, **kwargs) -> Tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray]: # noqa
+        """
+        Load the data.
+        """
         pass
 
+    
     @abstractmethod
     def train(self, *args, **kwargs) -> None:
         pass
-
-    @abstractmethod
-    def infer_signature(self, *args, **kwargs):
-        pass
-    
